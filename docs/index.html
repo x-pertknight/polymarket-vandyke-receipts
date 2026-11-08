@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CFTC v. Van Dyke reconciled to on-chain USDC.e receipts on Polygon.">
+<title>Van Dyke Receipts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --ink:#0d1117; --ink-2:#4a5260; --ink-3:#7a8290;
+  --rule:#dfe3e8; --grid:#eceff2;
+  --chain:#2a78d6; --chain-soft:rgba(42,120,214,.12);
+  --naive:#eb6834;
+  --good:#0ca30c;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111418; --surface:#181c21; --ink:#eef1f4; --ink-2:#b4bcc6; --ink-3:#848d99;
+  --rule:#2a3038; --grid:#222830; --chain:#3987e5; --chain-soft:rgba(57,135,229,.16); --naive:#d95926; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111418; --surface:#181c21; --ink:#eef1f4; --ink-2:#b4bcc6; --ink-3:#848d99;
+  --rule:#2a3038; --grid:#222830; --chain:#3987e5; --chain-soft:rgba(57,135,229,.16); --naive:#d95926; color-scheme:dark}
+
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:880px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+h1{font-family:var(--f-display);font-stretch:75%;font-weight:800;font-size:clamp(34px,6vw,56px);line-height:1.02;letter-spacing:-.01em;margin:8px 0 14px;text-wrap:balance}
+h2{font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:24px;line-height:1.15;margin:0 0 6px;text-wrap:balance}
+p{margin:0;max-width:65ch;color:var(--ink-2)}
+.lede{font-size:17px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.tile{background:var(--surface);padding:16px 18px;display:grid;gap:4px;align-content:start}
+.tile .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:500;letter-spacing:-.02em}
+.tile .k{font-size:13px;color:var(--ink-2)}
+.tile .s{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3)}
+
+section{display:grid;gap:14px}
+.panel{background:var(--surface);border:1px solid var(--rule);padding:18px 18px 12px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--f-mono);font-size:11px;fill:var(--ink-3)}
+svg .lab{fill:var(--ink-2);font-size:11.5px}
+svg .big{fill:var(--ink);font-size:13px;font-weight:500}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.cmp{grid-template-columns:1fr}}
+.cmp h3{font-family:var(--f-display);font-stretch:85%;font-size:17px;margin:0 0 2px}
+.cmp .note{font-size:13px}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);background:var(--surface)}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+td.r,th.r{text-align:right}
+td.num{white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--f-mono);font-size:11px;color:var(--ink-2);white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--good)}
+.scrollx{overflow-x:auto}.scrollx svg{min-width:620px}
+.foot{font-size:12.5px;color:var(--ink-3);max-width:75ch}
+.foot a{color:var(--ink-2)}
+details summary{cursor:pointer;font-size:13px;color:var(--ink-2)}
+details summary:focus-visible{outline:2px solid var(--chain);outline-offset:2px}
+
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-family:var(--f-mono);font-size:12px;line-height:1.45;padding:8px 10px;border-radius:4px;max-width:260px;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.hit{fill:transparent;cursor:default}
+@media (prefers-reduced-motion:no-preference){
+  .draw{stroke-dasharray:var(--len);stroke-dashoffset:0;animation:draw 1.4s ease-out both}
+  @keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CFTC v. Van Dyke · Release 9217-26 · Polygon receipts</div>
+    <h1>The Van Dyke trades, checked against the wallet's Polygon receipts</h1>
+    <p class="lede">The charging documents allege 13 purchases on Venezuela markets before the Maduro announcement. The wallet's 17 on-chain transactions reproduce every trading figure in the documents within the documents' own rounding. Two later transfers do not reconcile with this data and are listed below.</p>
+    <p>The wallet's link to the defendant is an allegation in the complaint. Van Dyke has pleaded not guilty and the charges have not been tried.</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Spent on 13 buys</div><div class="v">$33,934</div><div class="s">Ind. 10: approx. $33,934</div></div>
+    <div class="tile"><div class="k">Main bet, Jan 31 contract</div><div class="v">436,760</div><div class="s">shares at $0.0745 avg</div></div>
+    <div class="tile"><div class="k">Net profit</div><div class="v">$409,881</div><div class="s">Ind. 15: approx. $409,881</div></div>
+    <div class="tile"><div class="k">Redeemed after announcement</div><div class="v">4h 21m</div><div class="s">1h 28m after resolution</div></div>
+  </div>
+
+  <section>
+    <div>
+      <h2>Four waves of buying, then one redemption</h2>
+      <p>Cumulative shares of "Maduro out by January 31", built from the seven buy transactions. Each share paid $1 at resolution, so the final height is also the payout in dollars.</p>
+    </div>
+    <div class="panel scrollx">
+      <svg id="ladder" viewBox="0 0 800 360" role="img" aria-label="Step chart of cumulative shares bought from Dec 30 to Jan 2, reaching 436,760 shares, redeemed for $436,760 on Jan 3 at 8:41 AM ET"></svg>
+    </div>
+    <details>
+      <summary>Show the seven buys as a table</summary>
+      <div class="tblwrap" style="margin-top:10px">
+        <table id="ladderTable"><thead><tr><th>Time ET</th><th class="r">Shares</th><th class="r">USDC.e</th><th class="r">Price</th><th class="r">Cumulative</th></tr></thead><tbody></tbody></table>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <div>
+      <h2>Reading the fill log by address</h2>
+      <p>Polymarket's exchange writes one fill row per order. When this wallet is the taker, each counterparty's row also carries its address in the taker field. A desk that builds its own parser and credits those rows to the wallet books the counterparties' trades as the wallet's own. Paradigm documented the volume version of this in December 2025.</p>
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="sw" style="background:var(--chain)"></i>Receipts on chain</span>
+      <span><i class="sw" style="background:var(--naive)"></i>Every row naming the wallet</span>
+    </div>
+    <div class="cmp">
+      <div class="panel">
+        <h3>Buys</h3>
+        <p class="note">Crediting taker-field rows adds $16,700 of counterparty buys, 1.5 times the wallet's real buys.</p>
+        <svg id="cmpBuys" viewBox="0 0 380 140" role="img" aria-label="Buys: receipts $33,934 versus naive $50,634"></svg>
+      </div>
+      <div class="panel">
+        <h3>Sale money received</h3>
+        <p class="note">It adds $347,866 of sale proceeds the wallet never received, 60 times its real sales.</p>
+        <svg id="cmpSales" viewBox="0 0 380 140" role="img" aria-label="Sale receipts: receipts $5,858 versus naive $353,724"></svg>
+      </div>
+    </div>
+    <p class="foot">This is known exchange behavior, not a new discovery. The fix is to credit each fill row to its maker field only. Applied that way, the fills reproduce all 15 trade receipts to the micro USDC.e. These multiples come from this wallet's trades and are not a general error rate.</p>
+  </section>
+
+  <section>
+    <div>
+      <h2>Document vs chain</h2>
+      <p>What the complaint and the indictment say, next to what the receipts show.</p>
+    </div>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Item</th><th>Document</th><th class="r">On chain</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Number of bets</td><td>13 separate occasions (Ind. 11)</td><td class="r num">13 txs</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Total spent</td><td>approx. $33,934 (Ind. 10)</td><td class="r num">$33,934.34</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Jan 31 shares</td><td>more than 436,000 (Compl. 52)</td><td class="r num">436,759.61</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Jan 31 cost</td><td>approx. $32,538 (Compl. 52)</td><td class="r num">$32,538.34</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Average price</td><td>approx. $0.074 (Compl. 52)</td><td class="r num">$0.07450</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Jan 31 profit</td><td>more than $404,000 (Compl. 53)</td><td class="r num">$404,221.27</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Other contracts</td><td>more than $5,000 (Compl. 55)</td><td class="r num">$5,659.68</td><td><span class="chip">match</span></td></tr>
+          <tr><td>Total profit</td><td>approx. $409,881 (Ind. 15)</td><td class="r num">$409,880.95</td><td><span class="chip">match</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="foot">Share counts come from Polymarket's activity API; cash comes from USDC.e Transfer logs in the receipts. The two agree to 1 micro USDC.e on all 17 rows. Two later transfers (Ind. 16 and Compl. 59: 437,859 and 444,209) differ from the redemptions (437,957.39) by 98.39 and from total proceeds (443,815.29) by 393.71. Those transactions are outside this data. No finding is made about any other wallet.</p>
+  </section>
+
+  <section>
+    <div>
+      <h2>Check another wallet</h2>
+      <p>The repository ships a script that credits each fill row to its maker. It reads the fills slice in the repo, a CSV export of OrderFilled rows, or a Polygon RPC that serves archive logs. On the shipped slice only the named wallet is unredacted, so other wallets need the CSV or RPC input. It covers the original exchange contracts only. Polymarket now trades on newer contracts that the script does not read.</p>
+    </div>
+    <div class="tblwrap"><pre style="margin:0;padding:12px 14px;font-family:var(--f-mono);font-size:12.5px;color:var(--ink);white-space:pre">python3 -I code/check_wallet.py 0x31a56e9e690c621ed21de08cb559e9524cdb8ed9 \
+    --jsonl code/raw/fills_vandyke_txs.jsonl
+
+                        real          naive count
+  buys, USDC.e        33,934.34       50,634.09
+  sales, USDC.e        5,857.90      353,723.55</pre></div>
+  </section>
+
+  <p class="foot">Marco Amendola · Source and code: <a href="https://github.com/x-pertknight/polymarket-vandyke-receipts">github.com/x-pertknight/polymarket-vandyke-receipts</a> · Times US Eastern.</p>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(function(){
+  const NS="http://www.w3.org/2000/svg";
+  const el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+  const fmt=n=>n.toLocaleString("en-US",{maximumFractionDigits:0});
+  const tip=document.getElementById("tip");
+  function showTip(ev,html){tip.innerHTML=html;tip.hidden=false;const pad=14;let x=ev.clientX+pad,y=ev.clientY+pad;const r=tip.getBoundingClientRect();if(x+r.width>innerWidth-8)x=ev.clientX-r.width-pad;if(y+r.height>innerHeight-8)y=ev.clientY-r.height-pad;tip.style.left=x+"px";tip.style.top=y+"px"}
+  function hideTip(){tip.hidden=true}
+
+  // Hours since Dec 30 00:00 ET
+  const H=(d,h,m)=>({30:0,31:24,1:48,2:72,3:96}[d])+h+m/60;
+  const buys=[
+    {t:H(30,19,20),lbl:"Dec 30 19:20",sh:13769.33,usd:1238.34},
+    {t:H(30,22,2), lbl:"Dec 30 22:02",sh:850.00,usd:85.00},
+    {t:H(1,18,57), lbl:"Jan 1 18:57", sh:73685.38,usd:5000.00},
+    {t:H(2,11,49), lbl:"Jan 2 11:49", sh:90347.29,usd:6000.00},
+    {t:H(2,20,38), lbl:"Jan 2 20:38", sh:82420.83,usd:6000.00},
+    {t:H(2,21,15), lbl:"Jan 2 21:15", sh:87500.00,usd:7000.00},
+    {t:H(2,21,58), lbl:"Jan 2 21:58", sh:88186.77,usd:7215.00}
+  ];
+  let c=0,cu=0;buys.forEach(b=>{c+=b.sh;cu+=b.usd;b.cum=c;b.cumUsd=cu});
+  const total=c;
+
+  // table
+  const tb=document.querySelector("#ladderTable tbody");
+  buys.forEach(b=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${b.lbl}</td><td class="r num">${b.sh.toLocaleString("en-US",{minimumFractionDigits:2})}</td><td class="r num">${b.usd.toLocaleString("en-US",{minimumFractionDigits:2})}</td><td class="r num">$${(b.usd/b.sh).toFixed(4)}</td><td class="r num">${fmt(b.cum)}</td>`;tb.appendChild(tr)});
+
+  // ---- ladder
+  const svg=document.getElementById("ladder");
+  const W=800,Hh=360,m={l:62,r:26,t:46,b:40};
+  const t0=H(30,12,0),t1=H(3,12,0);
+  const x=t=>m.l+(t-t0)/(t1-t0)*(W-m.l-m.r);
+  const ymax=450000;
+  const y=v=>Hh-m.b-(v/ymax)*(Hh-m.t-m.b);
+  // grid
+  for(let v=0;v<=ymax;v+=100000){
+    el("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:"var(--grid)","stroke-width":1},svg);
+    const tx=el("text",{x:m.l-10,y:y(v)+4,"text-anchor":"end"},svg);tx.textContent=v===0?"0":(v/1000)+"k";
+  }
+  // day ticks
+  [["Dec 31",H(31,0,0)],["Jan 1",H(1,0,0)],["Jan 2",H(2,0,0)],["Jan 3",H(3,0,0)]].forEach(([l,t])=>{
+    el("line",{x1:x(t),x2:x(t),y1:y(0),y2:y(0)+5,stroke:"var(--ink-3)","stroke-width":1},svg);
+    const tx=el("text",{x:x(t),y:y(0)+20,"text-anchor":"middle"},svg);tx.textContent=l;
+  });
+  el("line",{x1:m.l,x2:W-m.r,y1:y(0),y2:y(0),stroke:"var(--ink-3)","stroke-width":1},svg);
+  const yl=el("text",{x:m.l-10,y:m.t-22,"text-anchor":"end"},svg);yl.textContent="shares";
+
+  // events: announcement, resolution, redemption
+  const ann=H(3,4,21),res=H(3,7,14),red=H(3,8,41);
+  el("rect",{x:x(ann),y:m.t-8,width:x(t1)-x(ann),height:y(0)-m.t+8,fill:"var(--chain-soft)",opacity:.55},svg);
+  [[ann,"4:21 announcement"],[res,"7:14 resolves Yes"]].forEach(([t,l],i)=>{
+    el("line",{x1:x(t),x2:x(t),y1:m.t-8,y2:y(0),stroke:"var(--ink-3)","stroke-width":1,"stroke-dasharray":"3 3"},svg);
+  });
+  const a1=el("text",{x:x(ann)-6,y:m.t-32,"text-anchor":"end",class:"lab"},svg);a1.textContent="Jan 3, 4:21 AM announcement";
+  const a2=el("text",{x:x(ann)-6,y:m.t-18,"text-anchor":"end"},svg);a2.textContent="7:14 resolves · 8:41 redeemed";
+
+  // step path
+  let d=`M${x(t0)},${y(0)}`;let prev=0;
+  buys.forEach(b=>{d+=` H${x(b.t)} V${y(b.cum)}`;prev=b.cum});
+  d+=` H${x(red)}`;
+  const area=el("path",{d:d+` V${y(0)} Z`,fill:"var(--chain-soft)"},svg);
+  const line=el("path",{d,fill:"none",stroke:"var(--chain)","stroke-width":2,"stroke-linejoin":"round",class:"draw"},svg);
+  try{const L=line.getTotalLength();line.style.setProperty("--len",L)}catch(e){}
+
+  // wave labels
+  const waves=[
+    {t:H(30,20,40),v:14619.33,txt:"Dec 30 · 14.6k",start:true},
+    {t:H(1,18,57),v:88304.71,txt:"Jan 1 · 73.7k"},
+    {t:H(2,11,49),v:178652.0,txt:"Jan 2 am · 90.3k"},
+    {t:H(2,21,15),v:total,txt:"Jan 2 pm · 258k in 80 min"}
+  ];
+  waves.forEach((w,i)=>{
+    const tx=el("text",{x:w.start?x(w.t)+8:x(w.t)-8,y:y(w.v)-9,"text-anchor":w.start?"start":"end",class:"lab"},svg);tx.textContent=w.txt;
+  });
+
+  // redemption marker
+  const rx=x(red),ry=y(total);
+  el("circle",{cx:rx,cy:ry,r:6,fill:"var(--chain)",stroke:"var(--surface)","stroke-width":2},svg);
+  const rl=el("text",{x:x(buys[4].t)-10,y:ry+24,"text-anchor":"end",class:"big"},svg);rl.textContent="436,760 shares → $436,760";
+  const rl2=el("text",{x:x(buys[4].t)-10,y:ry+40,"text-anchor":"end"},svg);rl2.textContent="cost $32,538";
+
+  // markers + hover
+  buys.forEach(b=>{
+    el("circle",{cx:x(b.t),cy:y(b.cum),r:4,fill:"var(--chain)",stroke:"var(--surface)","stroke-width":2},svg);
+    const h=el("circle",{cx:x(b.t),cy:y(b.cum),r:14,class:"hit",tabindex:0},svg);
+    const html=`<b>${b.lbl} ET</b><br>+${b.sh.toLocaleString("en-US",{minimumFractionDigits:2})} sh<br>$${b.usd.toLocaleString("en-US",{minimumFractionDigits:2})} at $${(b.usd/b.sh).toFixed(4)}<br>total ${fmt(b.cum)} sh · $${fmt(b.cumUsd)} spent`;
+    h.addEventListener("mousemove",e=>showTip(e,html));h.addEventListener("mouseleave",hideTip);
+    h.addEventListener("focus",()=>{const r=h.getBoundingClientRect();showTip({clientX:r.right,clientY:r.top},html)});h.addEventListener("blur",hideTip);
+  });
+  const rh=el("circle",{cx:rx,cy:ry,r:16,class:"hit",tabindex:0},svg);
+  const rhtml="<b>Jan 3 08:41 ET · Redeem</b><br>436,759.61 USDC.e received<br>4h 20m 49s after announcement";
+  rh.addEventListener("mousemove",e=>showTip(e,rhtml));rh.addEventListener("mouseleave",hideTip);
+
+  // ---- comparison bars
+  function cmp(id,real,naive,max){
+    const s=document.getElementById(id);const L=96,R=18,bw=380-L-R;
+    const sx=v=>L+v/max*bw;
+    [[ "Receipts",real,"var(--chain)",34],["Naive",naive,"var(--naive)",84]].forEach(([lab,v,col,yy])=>{
+      const t=el("text",{x:0,y:yy+15,class:"lab"},s);t.textContent=lab;
+      const w=Math.max(3,sx(v)-L);
+      el("rect",{x:L,y:yy,width:w,height:22,rx:3,fill:col},s);
+      const inside=w>150;
+      const vt=el("text",{x:inside?L+w-8:L+w+8,y:yy+15,"text-anchor":inside?"end":"start",class:"big"},s);
+      vt.textContent="$"+fmt(v);if(inside)vt.setAttribute("style","fill:#fff");
+      const hr=el("rect",{x:L,y:yy-6,width:bw,height:34,class:"hit"},s);
+      const html=`<b>${lab==="Naive"?"Every row naming the wallet":"Receipts on chain"}</b><br>$${v.toLocaleString("en-US",{minimumFractionDigits:2})}`;
+      hr.addEventListener("mousemove",e=>showTip(e,html));hr.addEventListener("mouseleave",hideTip);
+    });
+    el("line",{x1:L,x2:L,y1:24,y2:116,stroke:"var(--ink-3)","stroke-width":1},s);
+  }
+  cmp("cmpBuys",33934.34,50634.09,52000);
+  cmp("cmpSales",5857.90,353723.55,360000);
+  try{const sp=document.querySelector('.scrollx');if(sp)sp.scrollLeft=sp.scrollWidth;}catch(e){}
+})();
+</script>
+
+</body>
+</html>
