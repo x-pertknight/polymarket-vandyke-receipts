@@ -1,5 +1,7 @@
 # Van Dyke Polymarket case reconciled to on-chain USDC.e receipts
 
+[![reproduce](https://github.com/x-pertknight/polymarket-vandyke-receipts/actions/workflows/reproduce.yml/badge.svg)](https://github.com/x-pertknight/polymarket-vandyke-receipts/actions/workflows/reproduce.yml)
+
 Charts: https://x-pertknight.github.io/polymarket-vandyke-receipts/
 
 This repository reconciles the trading figures in CFTC v. Van Dyke, No. 1:26-cv-03369 (CFTC Release 9217-26), and United States v. Van Dyke, S.D.N.Y. 26 Cr. 156, to the Polygon transaction receipts of the wallet described in those documents. Every share and USDC.e figure below is recomputed offline from the files in `code/raw/` by `code/recompute.py`.
@@ -8,7 +10,7 @@ Wallet `0x31a56e9e690c621ed21de08cb559e9524cdb8ed9` was identified from the mask
 
 ## Why this wallet is named
 
-This wallet is identified from the public charging documents in CFTC v. Van Dyke and United States v. Van Dyke. The complaint describes it with a masked address, and its trades match every trading figure in both documents. The defendant is presumed innocent. The charges are allegations and have not been tried. No other wallet is named in this repository. Every other address in the shipped files is replaced by a label that holds within one transaction only.
+This wallet is identified from the public charging documents in CFTC v. Van Dyke and United States v. Van Dyke. The complaint describes it with a masked address, and its 17 transactions match every share count and every purchase, sale and redemption amount in both documents, within the documents' rounding. Two later transfer amounts in the documents do not reconcile with this data (see Two residuals). The defendant is presumed innocent. The charges are allegations and have not been tried. No other wallet is named in this repository. Every other address in the shipped files is replaced by a label that holds within one transaction only.
 
 Share counts come from Polymarket's public activity API. Cash amounts come from USDC.e Transfer logs in the on-chain receipts. The API's USDC amounts match the receipts to 1 micro USDC.e on all 17 rows. The API returns 17 rows for the wallet, consistent with Compl. 57, which says the wallet was used for no other trading on Polymarket. Times are US Eastern (EST, UTC minus 5). Ind. is the indictment and Compl. is the complaint.
 
@@ -63,6 +65,10 @@ Shares are summed before rounding, so a period total can differ by 0.01 from the
 Both figures describe the withdrawal from the wallet and later transfers. Those transactions are not among the receipts used here, so this data cannot explain the differences. They are not rounding.
 
 ## Reproduce
+
+Run `./reproduce.sh`. It runs the recompute, regenerates the four CSVs and compares them with `data/`, checks `data/SHA256SUMS` and runs the tests in `tests/`. CI runs it on every push.
+
+To run the two main checks by hand:
 
 ```
 python3 -I code/recompute.py
