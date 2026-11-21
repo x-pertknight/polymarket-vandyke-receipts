@@ -6,6 +6,10 @@ This repository reconciles the trading figures in CFTC v. Van Dyke, No. 1:26-cv-
 
 Wallet `0x31a56e9e690c621ed21de08cb559e9524cdb8ed9` was identified from the masked address in complaint para 48 and para 57 and from the match between its activity and the figures in both documents. It was not found by a detection method. The link between the wallet and the defendant is the complaint's allegation. Van Dyke has pleaded not guilty and the charges have not been tried. No finding is made about any other wallet.
 
+## Why this wallet is named
+
+This wallet is identified from the public charging documents in CFTC v. Van Dyke and United States v. Van Dyke. The complaint describes it with a masked address, and its trades match every trading figure in both documents. The defendant is presumed innocent. The charges are allegations and have not been tried. No other wallet is named in this repository. Every other address in the shipped files is replaced by a label that holds within one transaction only.
+
 Share counts come from Polymarket's public activity API. Cash amounts come from USDC.e Transfer logs in the on-chain receipts. The API's USDC amounts match the receipts to 1 micro USDC.e on all 17 rows. The API returns 17 rows for the wallet, consistent with Compl. 57, which says the wallet was used for no other trading on Polymarket. Times are US Eastern (EST, UTC minus 5). Ind. is the indictment and Compl. is the complaint.
 
 | # | Time ET | Tx | Type | Market (Jan 31 contracts) | Shares | USDC.e | Document | Source |
@@ -82,3 +86,7 @@ On the shipped slice it prints real buys 33,934.34 against a naive 50,634.09, an
 The CSV input takes OrderFilled rows with the columns maker, taker, makerAssetId, takerAssetId, makerAmountFilled, takerAmountFilled and evt_tx_hash or transactionHash, plus fee and evt_index when present. The RPC input needs an endpoint that serves archive eth_getLogs. Free public endpoints cap the block range per call, hence the small chunk.
 
 Scope and limits. The script reads the original CTF Exchange and NegRisk CTF Exchange contracts with USDC.e collateral. Polymarket now trades on newer exchange contracts that it does not read, so it covers fills up to that migration. It reports exchange fills only. Redemptions, splits, merges, neg risk conversions and token transfers are not counted, so the sales figure is not the wallet's cash out. Amounts are gross of fees and the fee total is printed separately. The neg risk path is untested because the shipped slice has no neg risk rows. Pass the Polymarket proxy wallet that appears in the maker field, not the signing EOA. A wallet with no rows prints a warning. The 49 percent and 60x multiples come from this wallet's trades and are not a general error rate.
+
+## License
+
+Code is MIT licensed. Text and data are CC BY 4.0.
