@@ -65,6 +65,10 @@ Other changes. The behavioural heuristics, the ranking of other wallets, the win
 - `dataapi.py` reads the v2 activity route, since Polymarket retired v1 on 2 November 2026 (https://docs.polymarket.com/migrate/data-api-v1-to-v2), and writes the rows in the v1 field names. On 2026-11-08 it returned the same 17 rows as the shipped file, field for field.
 - Two source links in the note that redirect were updated.
 
+## Changes on 2026-11-22
+
+- In `dataapi_activity.json` the profile pseudonym field returned by the data API was blanked after capture on 22 Nov 2026, because it is not part of the charging documents. The file hash changed for that reason only, from `64e1256e06f99ee140474a85bf55effb85ccaa911210af2dc24c48d2709ee93f` to `eb5a811031bf8a6d907eaf5e6e4fea047ecfc9ffccdfcf7d3693aa9ba861f61a`.
+
 ## Repository checks
 
 - `python3 -I code/recompute.py` run from outside the repository. All checks pass, and every number in the README and the note matches its output and the cited paragraph.
