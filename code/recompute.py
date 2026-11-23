@@ -193,13 +193,19 @@ def main():
     check("activity API usdcSize equals the receipt USDC.e amount for all 17 rows (to 1 micro USDC.e)", api_ok)
     one_sided = all((x["out"] == 0) != (x["inn"] == 0) for x in rows)
     check("each transaction moves USDC.e in one direction only for the wallet", one_sided)
-    # Share counts come from the activity API, not from the receipts, so pin their totals in
-    # micro shares. This still catches an edited share count if data/SHA256SUMS was edited too.
+    # Share counts come from the activity API, not from the receipts, so pin them here as well.
+    # This still catches an edited share count if data/SHA256SUMS was edited too.
     sh = defaultdict(int)
     for x in rows:
         sh[x["kind"]] += round(x["shares"] * 10 ** 6)
     check("activity API share totals in micro shares: BUY 461,186,960,690, SELL 23,229,560,000, REDEEM 437,957,388,901",
           dict(sh) == {"BUY": 461186960690, "SELL": 23229560000, "REDEEM": 437957388901}, str(dict(sh)))
+    # Totals miss edits that offset each other, so also pin every row: SHA-256 over the sorted
+    # lines "tx,kind,market,outcome,micro shares" of the 17 activity rows.
+    lines = sorted("%s,%s,%s,%s,%d" % (x["tx"], x["kind"], x["slug"], x["outcome"], round(x["shares"] * 10 ** 6)) for x in rows)
+    digest = hashlib.sha256("\n".join(lines).encode()).hexdigest()
+    check("activity API rows (tx, kind, market, outcome, micro shares) hash to 610d9eb5...0ad828",
+          digest == "610d9eb563940509f347cd2878ca2547e6911555989ac75ef8c10b1c5c0ad828", digest)
 
     buys = [x for x in rows if x["kind"] == "BUY"]
     sells = [x for x in rows if x["kind"] == "SELL"]
