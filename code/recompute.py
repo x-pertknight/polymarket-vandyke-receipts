@@ -12,10 +12,13 @@ Usage:
 Cash comes from USDC.e Transfer logs in the transaction receipts. Share counts come from
 Polymarket's public activity API (dataapi_activity.json). Times are shown in UTC and in
 US Eastern time, which was EST (UTC minus 5 hours) on every date involved.
+Before any figure is computed, the six raw inputs are hashed and compared with the
+entries for them in data/SHA256SUMS. A changed, missing or unlisted input fails the run.
 Exit status is 0 only if every check passes.
 """
 import argparse
 import csv
+import hashlib
 import json
 import os
 import sys
@@ -24,6 +27,9 @@ from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(HERE, "raw")
+SUMS = os.path.join(HERE, "..", "data", "SHA256SUMS")
+RAW_INPUTS = ["receipts_15tx.json", "receipts_redeems.json", "dataapi_activity.json",
+              "fills_vandyke_txs.jsonl", "token_map.json", "block_ts.json"]
 
 W = "0x31a56e9e690c621ed21de08cb559e9524cdb8ed9"
 TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -43,6 +49,34 @@ def check(name, ok, detail=""):
 def load(name):
     with open(os.path.join(RAW, name)) as f:
         return json.load(f)
+
+
+def verify_inputs():
+    """Compare the SHA-256 of every raw input with data/SHA256SUMS. Return a list of problems."""
+    expected = {}
+    try:
+        with open(SUMS) as f:
+            for line in f:
+                if line.strip():
+                    digest, path = line.split(None, 1)
+                    # SHA256SUMS lists raw inputs relative to data/, e.g. ../code/raw/block_ts.json
+                    expected[os.path.basename(path.strip())] = digest
+    except OSError as e:
+        return ["cannot read data/SHA256SUMS: %s" % e]
+    problems = []
+    for name in RAW_INPUTS:
+        if name not in expected:
+            problems.append("%s is not listed in data/SHA256SUMS" % name)
+            continue
+        try:
+            with open(os.path.join(RAW, name), "rb") as f:
+                got = hashlib.sha256(f.read()).hexdigest()
+        except OSError as e:
+            problems.append("cannot read code/raw/%s: %s" % (name, e))
+            continue
+        if got != expected[name]:
+            problems.append("code/raw/%s: sha256 %s, data/SHA256SUMS says %s" % (name, got, expected[name]))
+    return problems
 
 
 def who(x):
@@ -95,6 +129,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", help="write data CSVs into this directory")
     args = ap.parse_args()
+
+    # Refuse to compute from inputs that differ from the published hashes.
+    print("0. Input hashes (data/SHA256SUMS)")
+    problems = verify_inputs()
+    for p in problems:
+        print("  [FAIL] %s" % p)
+    if problems:
+        print("\nFAIL: %d raw input(s) do not match data/SHA256SUMS; no figures computed" % len(problems))
+        sys.exit(1)
+    print("  [PASS] all %d raw inputs match data/SHA256SUMS" % len(RAW_INPUTS))
 
     rec15 = load("receipts_15tx.json")
     recred = load("receipts_redeems.json")
@@ -149,6 +193,13 @@ def main():
     check("activity API usdcSize equals the receipt USDC.e amount for all 17 rows (to 1 micro USDC.e)", api_ok)
     one_sided = all((x["out"] == 0) != (x["inn"] == 0) for x in rows)
     check("each transaction moves USDC.e in one direction only for the wallet", one_sided)
+    # Share counts come from the activity API, not from the receipts, so pin their totals in
+    # micro shares. This still catches an edited share count if data/SHA256SUMS was edited too.
+    sh = defaultdict(int)
+    for x in rows:
+        sh[x["kind"]] += round(x["shares"] * 10 ** 6)
+    check("activity API share totals in micro shares: BUY 461,186,960,690, SELL 23,229,560,000, REDEEM 437,957,388,901",
+          dict(sh) == {"BUY": 461186960690, "SELL": 23229560000, "REDEEM": 437957388901}, str(dict(sh)))
 
     buys = [x for x in rows if x["kind"] == "BUY"]
     sells = [x for x in rows if x["kind"] == "SELL"]
