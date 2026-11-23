@@ -22,6 +22,7 @@ import csv
 import hashlib
 import json
 import os
+import re
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -65,12 +66,17 @@ def verify_inputs():
     """Compare the SHA-256 of every raw input with data/SHA256SUMS and RAW_PINS. Return a list of problems."""
     expected = {}
     try:
-        with open(SUMS) as f:
-            for line in f:
-                if line.strip():
-                    digest, path = line.split(None, 1)
-                    # SHA256SUMS lists raw inputs relative to data/, e.g. ../code/raw/block_ts.json
-                    expected[os.path.basename(path.strip())] = digest
+        with open(SUMS, "rb") as f:
+            for n, raw in enumerate(f, 1):
+                line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
+                if not line.strip():
+                    continue
+                # "<64 hex digits>  <path>", optional * before the path (binary mode marker)
+                m = re.fullmatch(r"([0-9a-f]{64}) [ *]?(\S.*)", line)
+                if not m or "\ufffd" in line:
+                    return ["data/SHA256SUMS line %d is malformed: %r" % (n, line[:80])]
+                # SHA256SUMS lists raw inputs relative to data/, e.g. ../code/raw/block_ts.json
+                expected[os.path.basename(m.group(2).strip())] = m.group(1)
     except OSError as e:
         return ["cannot read data/SHA256SUMS: %s" % e]
     problems = []
@@ -148,7 +154,7 @@ def main():
     for p in problems:
         print("  [FAIL] %s" % p)
     if problems:
-        print("\nFAIL: %d raw input(s) do not match data/SHA256SUMS; no figures computed" % len(problems))
+        print("\nFAIL: %d input check(s) failed; no figures computed" % len(problems))
         sys.exit(1)
     print("  [PASS] all %d raw inputs match data/SHA256SUMS and the hashes pinned in recompute.py" % len(RAW_INPUTS))
 
