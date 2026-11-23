@@ -75,6 +75,8 @@ python3 -I code/recompute.py
 cd data && shasum -a 256 -c SHA256SUMS
 ```
 
+The checksums in `data/SHA256SUMS` and in `recompute.py` are pinned inside this repo, so they catch accidental changes and partial tampering, not a deliberate change made together with regenerated checksums.
+
 `recompute.py` uses the Python standard library only and makes no network calls. `code/fetch/` holds the network steps that regenerate the raw files. `NOTE-orderfilled-attribution.md` explains how the exchange's fill events must be attributed. `VERIFICATION.md` lists what was checked and what changed from the earlier submission.
 
 ## Check another wallet (original exchange contracts only)
