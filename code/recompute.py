@@ -13,7 +13,8 @@ Cash comes from USDC.e Transfer logs in the transaction receipts. Share counts c
 Polymarket's public activity API (dataapi_activity.json). Times are shown in UTC and in
 US Eastern time, which was EST (UTC minus 5 hours) on every date involved.
 Before any figure is computed, the six raw inputs are hashed and compared with the
-entries for them in data/SHA256SUMS. A changed, missing or unlisted input fails the run.
+entries for them in data/SHA256SUMS and with the same hashes pinned in this file
+(RAW_PINS). A changed, missing or unlisted input fails the run.
 Exit status is 0 only if every check passes.
 """
 import argparse
@@ -28,8 +29,17 @@ from datetime import datetime, timedelta, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(HERE, "raw")
 SUMS = os.path.join(HERE, "..", "data", "SHA256SUMS")
-RAW_INPUTS = ["receipts_15tx.json", "receipts_redeems.json", "dataapi_activity.json",
-              "fills_vandyke_txs.jsonl", "token_map.json", "block_ts.json"]
+# SHA-256 of the six raw inputs, pinned here as well as in data/SHA256SUMS, so that editing
+# SHA256SUMS to match a changed input is not enough to make this script pass.
+RAW_PINS = {
+    "receipts_15tx.json": "ddf996d17f4bfd582a4a0b131f9114b250baa99a5e3d4ad79930538aff640293",
+    "receipts_redeems.json": "33b1ec5df4c0bd045687bc642d1a96a97767d72915d5eb59d6967209f7416dc1",
+    "dataapi_activity.json": "eb5a811031bf8a6d907eaf5e6e4fea047ecfc9ffccdfcf7d3693aa9ba861f61a",
+    "fills_vandyke_txs.jsonl": "752e63cb6323a130cc1ca64316fc3e3ed0b44a710aa839765b2a2fb715421e39",
+    "token_map.json": "aecf2cb63c3635447436983a4f190fdd0f2ea1ba3157230b52ebb21d896fc1ee",
+    "block_ts.json": "e3737b0b50782e0a81cfe48b3ea4b6fa5a5113fb0cc1aa739c129e632b3e3afb",
+}
+RAW_INPUTS = list(RAW_PINS)
 
 W = "0x31a56e9e690c621ed21de08cb559e9524cdb8ed9"
 TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -52,7 +62,7 @@ def load(name):
 
 
 def verify_inputs():
-    """Compare the SHA-256 of every raw input with data/SHA256SUMS. Return a list of problems."""
+    """Compare the SHA-256 of every raw input with data/SHA256SUMS and RAW_PINS. Return a list of problems."""
     expected = {}
     try:
         with open(SUMS) as f:
@@ -76,6 +86,8 @@ def verify_inputs():
             continue
         if got != expected[name]:
             problems.append("code/raw/%s: sha256 %s, data/SHA256SUMS says %s" % (name, got, expected[name]))
+        if got != RAW_PINS[name]:
+            problems.append("code/raw/%s: sha256 %s, recompute.py pins %s" % (name, got, RAW_PINS[name]))
     return problems
 
 
@@ -131,14 +143,14 @@ def main():
     args = ap.parse_args()
 
     # Refuse to compute from inputs that differ from the published hashes.
-    print("0. Input hashes (data/SHA256SUMS)")
+    print("0. Input hashes (data/SHA256SUMS and RAW_PINS)")
     problems = verify_inputs()
     for p in problems:
         print("  [FAIL] %s" % p)
     if problems:
         print("\nFAIL: %d raw input(s) do not match data/SHA256SUMS; no figures computed" % len(problems))
         sys.exit(1)
-    print("  [PASS] all %d raw inputs match data/SHA256SUMS" % len(RAW_INPUTS))
+    print("  [PASS] all %d raw inputs match data/SHA256SUMS and the hashes pinned in recompute.py" % len(RAW_INPUTS))
 
     rec15 = load("receipts_15tx.json")
     recred = load("receipts_redeems.json")
